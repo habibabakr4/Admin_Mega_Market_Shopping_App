@@ -1,17 +1,21 @@
+import 'dart:io';
+
 import 'package:admin_of_online_app/consts/app_constants.dart';
 import 'package:admin_of_online_app/models/product_model.dart';
+import 'package:admin_of_online_app/services/my_app_method.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import '../consts/my_validators.dart';
 import '../widgets/title_text.dart';
 import '../widgets/subtitle_text.dart';
-
 
 class EditOrUploadProductScreen extends StatefulWidget {
   static const routeName = '/EditOrUploadProductScreen';
   final ProductModel? productModel;
   const EditOrUploadProductScreen({
-    super.key, this.productModel,
+    super.key,
+    this.productModel,
   });
 
   @override
@@ -21,6 +25,9 @@ class EditOrUploadProductScreen extends StatefulWidget {
 
 class _EditOrUploadProductScreenState extends State<EditOrUploadProductScreen> {
   final _formKey = GlobalKey<FormState>();
+  XFile? _pickedImage;
+  bool isEditing = false;
+  String? productImageNetwork;
 
   late TextEditingController _titleController,
       _priceController,
@@ -29,10 +36,19 @@ class _EditOrUploadProductScreenState extends State<EditOrUploadProductScreen> {
   String? _categoryValue;
   @override
   void initState() {
-    _titleController = TextEditingController(text: "");
-    _priceController = TextEditingController(text: "");
-    _descriptionController = TextEditingController(text: "");
-    _quantityController = TextEditingController(text: "");
+    if (widget.productModel != null) {
+      isEditing = true;
+      productImageNetwork = widget.productModel!.productImage;
+      _categoryValue = widget.productModel!.productCategory;
+    }
+    _titleController =
+        TextEditingController(text: widget.productModel?.productTitle);
+    _priceController =
+        TextEditingController(text: widget.productModel?.productPrice);
+    _descriptionController =
+        TextEditingController(text: widget.productModel?.productCategory);
+    _quantityController =
+        TextEditingController(text: widget.productModel?.productQuantity);
 
     super.initState();
   }
@@ -51,24 +67,68 @@ class _EditOrUploadProductScreenState extends State<EditOrUploadProductScreen> {
     _priceController.clear();
     _descriptionController.clear();
     _quantityController.clear();
+    removePickedImage();
   }
 
   Future<void> _uploadProduct() async {
-    // if (_categoryValue == null) {
-    //   MyAppMethods.showErrorORWarningDialog(
-    //     context: context,
-    //     subtitle: "Category is empty",
-    //     fct: () {},
-    //   );
-    //   return;
-    // }
+    if (_categoryValue == null) {
+      MyAppMethods.showErrorORWarningDialog(
+        context: context,
+        subtitle: "Category is empty",
+        fct: () {},
+      );
+      return;
+    }
+
+    if (_pickedImage == null) {
+      MyAppMethods.showErrorORWarningDialog(
+          context: context, subtitle: "Please pick an image", fct: () {});
+      return;
+    }
     final isValid = _formKey.currentState!.validate();
     FocusScope.of(context).unfocus();
     if (isValid) {}
   }
 
+  Future<void> _editProduct() async {
+    final isValid = _formKey.currentState!.validate();
+    FocusScope.of(context).unfocus();
+    if (_pickedImage == null && productImageNetwork == null) {
+      MyAppMethods.showErrorORWarningDialog(
+          context: context, subtitle: "Please pick up an image ", fct: () {});
+      return;
+    }
+    if (isValid) {}
+  }
+
+  void removePickedImage() {
+    setState(() {
+      _pickedImage = null;
+      productImageNetwork = null;
+    });
+  }
+
+  Future<void> localImagePicker() async {
+    final ImagePicker picker = ImagePicker();
+    await MyAppMethods.imagePickerDialog(
+      context: context,
+      cameraFCT: () async {
+        _pickedImage = await picker.pickImage(source: ImageSource.camera);
+        setState(() {});
+      },
+      galleryFCT: () async {
+        _pickedImage = await picker.pickImage(source: ImageSource.gallery);
+        setState(() {});
+      },
+      removeFCT: () {
+        _pickedImage = null;
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    Size size = MediaQuery.of(context).size;
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
@@ -111,14 +171,18 @@ class _EditOrUploadProductScreenState extends State<EditOrUploadProductScreen> {
                     ),
                   ),
                   icon: const Icon(Icons.upload),
-                  label: const Text(
-                    "Upload Product",
-                    style: TextStyle(
+                  label: Text(
+                    isEditing ? "Edit Product" : "Upload Product",
+                    style: const TextStyle(
                       fontSize: 20,
                     ),
                   ),
                   onPressed: () {
-                    _uploadProduct();
+                    if (isEditing) {
+                      _editProduct();
+                    } else {
+                      _uploadProduct();
+                    }
                   },
                 ),
               ],
@@ -127,8 +191,8 @@ class _EditOrUploadProductScreenState extends State<EditOrUploadProductScreen> {
         ),
         appBar: AppBar(
           centerTitle: true,
-          title: const TitlesTextWidget(
-            label: "Upload a new product",
+          title: TitlesTextWidget(
+            label: isEditing ? "Edit Product" : "Upload a new product",
           ),
         ),
         body: SafeArea(
@@ -139,16 +203,72 @@ class _EditOrUploadProductScreenState extends State<EditOrUploadProductScreen> {
                   height: 20,
                 ),
                 /* Image picker here ***********************************/
-
+                if (isEditing && productImageNetwork != null) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      productImageNetwork!,
+                      height: size.width * 0.3,
+                      alignment: Alignment.center,
+                    ),
+                  )
+                ] else if (_pickedImage == null) ...[
+                  SizedBox(
+                    width: size.width * 0.4 + 10,
+                    height: size.width * 0.4,
+                    child: Column(children: [
+                      const Icon(
+                        Icons.image_outlined,
+                        size: 80,
+                        color: Colors.blue,
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          localImagePicker();
+                        },
+                        child: const Text("Pick Product Image"),
+                      )
+                    ]),
+                  )
+                ] else ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.file(
+                      File(_pickedImage!.path),
+                      height: size.width * 0.5,
+                      alignment: Alignment.center,
+                    ),
+                  )
+                ],
+                if (_pickedImage != null && productImageNetwork != null) ...[
+                  Row(
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          localImagePicker();
+                        },
+                        child: const Text("Pick another image"),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          removePickedImage();
+                        },
+                        child: const Text(
+                          "Remove image",
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox(
                   height: 25,
                 ),
-                /* ToDo: Select Category DropDown Button Will be Here*/
                 DropdownButton<String>(
                   hint: const Text("Select Category"),
                   value: _categoryValue,
                   items: AppConstants.categoriesDropDownList,
-                  onChanged: (value){
+                  onChanged: (value) {
                     setState(() {
                       _categoryValue = value;
                     });
