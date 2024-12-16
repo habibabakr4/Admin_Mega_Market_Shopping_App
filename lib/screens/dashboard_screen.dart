@@ -42,7 +42,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           crossAxisCount: 2,
           childAspectRatio: 1,
           children: List.generate(
-            3,
+            4,
             (index) => Padding(
               padding: const EdgeInsets.all(8),
               child: DashboardButtonWidget(

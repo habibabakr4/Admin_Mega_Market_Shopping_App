@@ -1,5 +1,6 @@
 import 'package:admin_of_online_app/screens/edit_upload_product_form.dart';
 import 'package:admin_of_online_app/screens/inner_screens/orders/orders_screen.dart';
+import 'package:admin_of_online_app/screens/screens_best_selling_products_chart.dart';
 import 'package:admin_of_online_app/screens/search_screen.dart';
 import 'package:flutter/material.dart';
 
@@ -34,6 +35,13 @@ class DashboardButtonsModel {
           imagePath: "https://res.cloudinary.com/dueksc1xj/image/upload/v1734025398/order_n4lipk.png",
           onPressed: () {
             Navigator.pushNamed(context, OrdersScreenFree.routeName);
+          },
+        ),
+         DashboardButtonsModel(
+          text: "Best Selling",
+          imagePath: "https://res.cloudinary.com/dueksc1xj/image/upload/v1734311010/free-bar-chart-icon-676-thumb_osoypn.png",
+          onPressed: () {
+            Navigator.pushNamed(context, BestSellingProductsChart.routeName);
           },
         ),
       ];
